@@ -50,7 +50,11 @@ func (t *Translator) ProcessListeners(gateways []*GatewayContext, xdsIR XdsIRMap
 			// Process protocol & supported kinds
 			switch listener.Protocol {
 			case v1beta1.TLSProtocolType:
-				t.validateAllowedRoutes(listener, KindTLSRoute)
+				if listener.TLS != nil && *listener.TLS.Mode == v1beta1.TLSModeTerminate {
+					t.validateAllowedRoutes(listener, KindTCPRoute)
+				} else {
+					t.validateAllowedRoutes(listener, KindTLSRoute)
+				}
 			case v1beta1.HTTPProtocolType, v1beta1.HTTPSProtocolType:
 				t.validateAllowedRoutes(listener, KindHTTPRoute, KindGRPCRoute)
 			case v1beta1.TCPProtocolType:

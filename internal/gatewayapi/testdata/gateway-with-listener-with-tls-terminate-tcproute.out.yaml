@@ -7,21 +7,24 @@ gateways:
     spec:
       gatewayClassName: envoy-gateway-class
       listeners:
-        - name: tls
+        - name: tls-terminate
           protocol: TLS
+          port: 90
+          hostname: foo.com
           tls:
             mode: Terminate
-          port: 90
+            certificateRefs:
+              - name: tls-secret-1
           allowedRoutes:
             namespaces:
               from: All
     status:
       listeners:
-        - name: tls
+        - name: tls-terminate
           supportedKinds:
             - group: gateway.networking.k8s.io
               kind: TCPRoute
-          attachedRoutes: 0
+          attachedRoutes: 1
           conditions:
             - type: Programmed
               status: "True"
@@ -31,19 +34,19 @@ gateways:
               status: "True"
               reason: Accepted
               message: Listener has been successfully translated
-tlsRoutes:
+tcpRoutes:
   - apiVersion: gateway.networking.k8s.io/v1alpha2
-    kind: TLSRoute
+    kind: TCPRoute
     metadata:
       namespace: default
-      name: tlsroute-1
+      name: tcproute-1
     spec:
       parentRefs:
         - namespace: envoy-gateway
           name: gateway-1
       rules:
         - backendRefs:
-            - name: service-1
+            - name: service-2
               port: 8080
     status:
       parents:
@@ -53,15 +56,26 @@ tlsRoutes:
           controllerName: gateway.envoyproxy.io/gatewayclass-controller
           conditions:
             - type: Accepted
-              status: "False"
-              reason: NotAllowedByListeners
-              message: No listeners included by this parent ref allowed this attachment.
-            - type: ResolvedRefs 
               status: "True"
-              reason: ResolvedRefs 
+              reason: Accepted
+              message: Route is accepted
+            - type: ResolvedRefs
+              status: "True"
+              reason: ResolvedRefs
               message: Resolved all the Object references for the Route
 xdsIR:
-  envoy-gateway-gateway-1: {}
+  envoy-gateway-gateway-1:
+    tcp:
+      - name: envoy-gateway-gateway-1-tls-terminate-tcproute-1
+        address: 0.0.0.0
+        port: 10090
+        tls:
+          snis:
+            - "foo.com"
+        destinations:
+          - host: 7.7.7.7
+            port: 8080
+            weight: 1
 infraIR:
   envoy-gateway-gateway-1:
     proxy:
@@ -74,7 +88,7 @@ infraIR:
       listeners:
         - address: ""
           ports:
-            - name: tls
+            - name: tls-terminate
               protocol: "TLS"
               servicePort: 90
               containerPort: 10090

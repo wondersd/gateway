@@ -359,7 +359,7 @@ func (t *Translator) validateTLSConfiguration(listener *ListenerContext, resourc
 			break
 		}
 
-		if listener.TLS.Mode != nil && *listener.TLS.Mode != v1beta1.TLSModePassthrough {
+		if listener.TLS.Mode != nil && *listener.TLS.Mode != v1beta1.TLSModePassthrough && *listener.TLS.Mode != v1beta1.TLSModeTerminate {
 			listener.SetCondition(
 				v1beta1.ListenerConditionProgrammed,
 				metav1.ConditionFalse,
@@ -369,7 +369,7 @@ func (t *Translator) validateTLSConfiguration(listener *ListenerContext, resourc
 			break
 		}
 
-		if len(listener.TLS.CertificateRefs) > 0 {
+		if len(listener.TLS.CertificateRefs) > 0 && *listener.TLS.Mode == v1beta1.TLSModePassthrough {
 			listener.SetCondition(
 				v1beta1.ListenerConditionProgrammed,
 				metav1.ConditionFalse,
